@@ -2,7 +2,7 @@ import "dotenv/config";
 import express from "express";
 import bodyParser from "body-parser";
 import mongoose from "mongoose";
-import encrypt from "mongoose-encryption";
+import md5 from "md5";
 
 
 const app = express();
@@ -26,8 +26,6 @@ const userSchema = new mongoose.Schema({
     }
 });
 
-let secretKey = process.env.SECRET_KEY;
-userSchema.plugin(encrypt, {secret: secretKey, encryptedFields: ["password"]});
 
 const User = mongoose.model("User", userSchema);
 
@@ -54,7 +52,7 @@ app.get("/login", (req,res) => {
 
 app.post("/register", (req,res) => {
    const username = req.body.username;
-   const password = req.body.password;
+   const password = md5(req.body.password);
    const newUser = new User({
      username: username,
      password: password
@@ -66,7 +64,7 @@ app.post("/register", (req,res) => {
 
 app.post("/login", async (req,res) => {
    const username = req.body.username;
-   const password = req.body.password;
+   const password = md5(req.body.password);
    try{
       const user = await User.findOne({username: username});
       if(user != null){
