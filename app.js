@@ -2,7 +2,7 @@ import "dotenv/config";
 import express from "express";
 import bodyParser from "body-parser";
 import mongoose from "mongoose";
-import md5 from "md5";
+import bcrypt from "bcrypt";
 
 
 const app = express();
@@ -52,30 +52,29 @@ app.get("/login", (req,res) => {
 
 app.post("/register", (req,res) => {
    const username = req.body.username;
-   const password = md5(req.body.password);
-   const newUser = new User({
-     username: username,
-     password: password
-   });
-   newUser.save();
+   const password = req.body.password;
+   bcrypt.hash(password, 10, function(err, hash) {
+      const newUser = new User({
+         username: username,
+         password: hash
+       });
+       newUser.save();
+  });
    console.log("Successfully registered!");
    res.render("secrets.ejs");
 });
 
 app.post("/login", async (req,res) => {
    const username = req.body.username;
-   const password = md5(req.body.password);
+   const password = req.body.password;
    try{
       const user = await User.findOne({username: username});
       if(user != null){
-        if(user.password == password){
-           res.render("secrets.ejs");
-        }
-        else{
-           console.log("Check your password and try again!");
-        // res.json({msg: "Check your password and try again!"});
-           res.redirect("/login");
-        }
+         bcrypt.compare(password, user.password, function(err, result) {
+           if(result === true){
+              res.render("secrets.ejs");
+           }
+        });
       }
       else{
         console.log("Either username or password were wrong, please try again!");
